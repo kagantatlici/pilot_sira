@@ -14,11 +14,18 @@
     .grid{display:grid; grid-template-columns: 1fr 1fr; gap: 24px}
     table{width:100%; border-collapse: collapse}
     thead th{background:#f2f2f2; text-align:left; padding:8px; font-size:14px}
-    tbody td{padding:8px; border-top:1px solid #eee; font-size:14px}
+    tbody td{padding:8px; border-top:1px solid #eee; font-size:14px; word-break: break-word;}
     td.num{text-align:right; width:120px}
     button.refresh{padding:6px 10px; font-size: 12px; border: 1px solid #ccc; background:#fff; border-radius:6px; cursor:pointer}
     button.refresh:hover{background:#f7f7f7}
     /* no auto-refresh */
+    @media (max-width: 680px){
+      body{margin:16px}
+      h1{font-size: 18px}
+      h2{font-size: 16px}
+      .grid{grid-template-columns: 1fr; gap: 16px}
+      thead th, tbody td{font-size: 15px}
+    }
   </style>
   <script>
     async function load() {
@@ -50,18 +57,28 @@
         const tr = document.createElement('tr');
         const name = (item && typeof item === 'object') ? (item.gemiAdi || String(item)) : String(item);
         const boy = (item && typeof item === 'object' && item.boy != null) ? Number(item.boy) : null;
-        const plan = (item && typeof item === 'object' && item.planlama) ? item.planlama : '—';
+        const planRaw = (item && typeof item === 'object' && item.planlama) ? item.planlama : '';
+        const plan = formatPlan(planRaw);
         const td = document.createElement('td');
-        const parts = [
-          `${idx + 1}-`,
-          plan,
-          name,
-          (boy != null ? (Number.isFinite(boy) ? boy.toFixed(2) : String(boy)) : '-')
-        ];
-        td.textContent = parts.join(' - ');
+        const boyTxt = (boy != null ? (Number.isFinite(boy) ? `${boy.toFixed(2)} m` : `${String(boy)} m`) : '-')
+        td.textContent = `${idx + 1}- ${plan} - ${name} - ${boyTxt}`;
         tr.appendChild(td);
         tbody.appendChild(tr);
       });
+    }
+    function formatPlan(planText){
+      const s = String(planText || '').replace(/PLAN\.?\s*GEÇİŞ/i, '').trim();
+      const m = s.match(/(\d{1,2})\.(\d{1,2})\.(\d{2,4})\s+(\d{2}:\d{2})/);
+      if(!m){
+        // fallback: just return original text without leading hyphens
+        return s.replace(/^[-\s]+/, '') || '—';
+      }
+      const day = parseInt(m[1], 10);
+      const mon = parseInt(m[2], 10);
+      const time = m[4];
+      const months = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+      const monthName = months[Math.max(1, mon) - 1] || '';
+      return `${day} ${monthName} ${time}`;
     }
     window.addEventListener('load', ()=>{
       // Yalnızca sayfa açıldığında bir kez veri çek
