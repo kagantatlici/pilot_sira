@@ -3,45 +3,59 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pilotlu Gemi Sıra</title>
+  <title>Pilotlu Gemilerin Sırası</title>
   <style>
     body{font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px;}
-    h1{font-size: 20px; margin: 0 0 16px;}
-    h2{font-size: 18px; margin: 24px 0 8px;}
-    .time{color:#555; font-size: 12px}
-    ol{padding-left: 20px}
+    h1{font-size: 22px; margin: 0 0 12px; display:flex; align-items:center; gap:12px}
+    h2{font-size: 18px; margin: 0 0 8px;}
+    .time{color:#555; font-size: 12px; margin-bottom: 16px}
     .empty{color:#777}
-    .wrap{max-width: 600px}
+    .wrap{max-width: 1000px}
+    .grid{display:grid; grid-template-columns: 1fr 1fr; gap: 24px}
+    table{width:100%; border-collapse: collapse}
+    thead th{background:#f2f2f2; text-align:left; padding:8px; font-size:14px}
+    tbody td{padding:8px; border-top:1px solid #eee; font-size:14px}
+    td.num{text-align:right; width:120px}
+    button.refresh{padding:6px 10px; font-size: 12px; border: 1px solid #ccc; background:#fff; border-radius:6px; cursor:pointer}
+    button.refresh:hover{background:#f7f7f7}
     /* no auto-refresh */
   </style>
   <script>
     async function load() {
-      const elK = document.getElementById('kuzey');
-      const elG = document.getElementById('guney');
+      const elK = document.getElementById('kuzeyBody');
+      const elG = document.getElementById('guneyBody');
       const elT = document.getElementById('time');
-      elK.innerHTML = '<li>Yükleniyor...</li>';
-      elG.innerHTML = '<li>Yükleniyor...</li>';
+      elK.innerHTML = '<tr><td colspan="2">Yükleniyor...</td></tr>';
+      elG.innerHTML = '<tr><td colspan="2">Yükleniyor...</td></tr>';
       try {
         const r = await fetch('list.json', { cache: 'no-store' });
         const data = await r.json();
         elT.textContent = new Date(data.lastUpdate || Date.now()).toLocaleString('tr-TR');
-        renderList(elK, data.kuzeyden);
-        renderList(elG, data.guneyden);
+        renderTable(elK, data.kuzeyden);
+        renderTable(elG, data.guneyden);
       } catch (e) {
-        elK.innerHTML = '<li class="empty">Veri yok</li>';
-        elG.innerHTML = '<li class="empty">Veri yok</li>';
+        elK.innerHTML = '<tr><td colspan="2" class="empty">Veri yok</td></tr>';
+        elG.innerHTML = '<tr><td colspan="2" class="empty">Veri yok</td></tr>';
       }
     }
-    function renderList(ol, arr){
-      ol.innerHTML = '';
+    function renderTable(tbody, arr){
+      tbody.innerHTML = '';
       if(!arr || arr.length === 0){
-        ol.insertAdjacentHTML('beforeend', '<li class="empty">Veri yok</li>');
+        tbody.insertAdjacentHTML('beforeend', '<tr><td colspan="2" class="empty">Veri yok</td></tr>');
         return;
       }
-      arr.forEach((name)=>{
-        const li = document.createElement('li');
-        li.textContent = name;
-        ol.appendChild(li);
+      arr.forEach((item)=>{
+        const tr = document.createElement('tr');
+        const name = typeof item === 'string' ? item : item.gemiAdi;
+        const boy = (typeof item === 'object' && item && item.boy) ? item.boy : null;
+        const td1 = document.createElement('td');
+        td1.textContent = name;
+        const td2 = document.createElement('td');
+        td2.className = 'num';
+        td2.textContent = boy ? Number(boy).toFixed(2) : '-';
+        tr.appendChild(td1);
+        tr.appendChild(td2);
+        tbody.appendChild(tr);
       });
     }
     window.addEventListener('load', ()=>{
@@ -52,12 +66,32 @@
   </head>
 <body>
   <div class="wrap">
-    <h1>Pilotlu Gemi Sıra</h1>
+    <h1>
+      Pilotlu Gemilerin Sırası
+      <button class="refresh" onclick="load()">⟳ Yenile</button>
+    </h1>
     <div class="time">Güncelleme: <span id="time">—</span></div>
-    <h2>Kuzeyden Pilotlu</h2>
-    <ol id="kuzey"></ol>
-    <h2>Güneyden Pilotlu</h2>
-    <ol id="guney"></ol>
+
+    <div class="grid">
+      <div>
+        <h2>Kuzeyden Pilotlu Geçişe Hazır</h2>
+        <table>
+          <thead>
+            <tr><th>Gemi Adı</th><th class="num">Boy (m)</th></tr>
+          </thead>
+          <tbody id="kuzeyBody"></tbody>
+        </table>
+      </div>
+      <div>
+        <h2>Güneyden Pilotlu Geçişe Hazır</h2>
+        <table>
+          <thead>
+            <tr><th>Gemi Adı</th><th class="num">Boy (m)</th></tr>
+          </thead>
+          <tbody id="guneyBody"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </body>
 </html>

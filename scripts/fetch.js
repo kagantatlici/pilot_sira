@@ -1,10 +1,11 @@
-// Fetches planned pilotage from Kıyı Emniyeti and writes list.json for GitHub Pages
+// Fetches pilotage lists from Kıyı Emniyeti and writes list.json for GitHub Pages
 import fs from 'node:fs/promises';
 
 const KE_URL = 'https://www.kiyiemniyeti.gov.tr/gemi_trafik_bilgi_sistemleri';
 
-async function fetchPlanned(direction) {
-  const params = new URLSearchParams({ Strait: 'I', Direction: direction, Movement: 'YP', submitted: '1' }).toString();
+async function fetchReady(direction) {
+  // Movement: 'YG' = Geçişe Hazır, 'YP' = Planlı
+  const params = new URLSearchParams({ Strait: 'I', Direction: direction, Movement: 'YG', submitted: '1' }).toString();
   const r = await fetch(KE_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'Mozilla/5.0' },
@@ -33,6 +34,7 @@ function formatRows(rows) {
   return rows.map((row) => ({
     planlama: decodeHtmlEntities(row[1] || ''),
     gemiAdi: row[2] || '',
+    boy: safeParseFloat(row[3]),
     kilavuz: ((row[5] || '').toLowerCase().includes('evet')),
   }));
 }
@@ -42,11 +44,22 @@ function decodeHtmlEntities(text) {
   return String(text || '').replace(/&#?\w+;/g, (m) => entities[m] || m);
 }
 
+function safeParseFloat(v) {
+  const n = parseFloat(String(v || '').replace(',', '.'));
+  return Number.isFinite(n) ? n : null;
+}
+
 async function main() {
   try {
-    const [ns, sn] = await Promise.all([fetchPlanned('NS'), fetchPlanned('SN')]);
-    const kuzeyden = (ns || []).filter((r) => r.kilavuz).map((r) => r.gemiAdi).filter(Boolean);
-    const guneyden = (sn || []).filter((r) => r.kilavuz).map((r) => r.gemiAdi).filter(Boolean);
+    const [ns, sn] = await Promise.all([fetchReady('NS'), fetchReady('SN')]);
+    const kuzeyden = (ns || [])
+      .filter((r) => r.kilavuz)
+      .map((r) => ({ gemiAdi: r.gemiAdi, boy: r.boy }))
+      .filter((r) => r.gemiAdi);
+    const guneyden = (sn || [])
+      .filter((r) => r.kilavuz)
+      .map((r) => ({ gemiAdi: r.gemiAdi, boy: r.boy }))
+      .filter((r) => r.gemiAdi);
     const out = { kuzeyden, guneyden, lastUpdate: new Date().toISOString() };
     await fs.writeFile(new URL('../list.json', import.meta.url), JSON.stringify(out, null, 2), 'utf8');
     console.log('list.json yazıldı:', out);
@@ -59,4 +72,3 @@ async function main() {
 }
 
 await main();
-
