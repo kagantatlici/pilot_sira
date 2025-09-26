@@ -12,7 +12,7 @@
     ol{padding-left: 20px}
     .empty{color:#777}
     .wrap{max-width: 600px}
-    .refresh{font-size:12px; color:#777}
+    /* no auto-refresh */
   </style>
   <script>
     async function load() {
@@ -22,14 +22,14 @@
       elK.innerHTML = '<li>Yükleniyor...</li>';
       elG.innerHTML = '<li>Yükleniyor...</li>';
       try {
-        const r = await fetch('/api/list');
+        const r = await fetch('list.json', { cache: 'no-store' });
         const data = await r.json();
         elT.textContent = new Date(data.lastUpdate || Date.now()).toLocaleString('tr-TR');
         renderList(elK, data.kuzeyden);
         renderList(elG, data.guneyden);
       } catch (e) {
-        elK.innerHTML = '<li class="empty">Hata</li>';
-        elG.innerHTML = '<li class="empty">Hata</li>';
+        elK.innerHTML = '<li class="empty">Veri yok</li>';
+        elG.innerHTML = '<li class="empty">Veri yok</li>';
       }
     }
     function renderList(ol, arr){
@@ -45,15 +45,15 @@
       });
     }
     window.addEventListener('load', ()=>{
+      // Yalnızca sayfa açıldığında bir kez veri çek
       load();
-      setInterval(load, 60_000);
     });
   </script>
   </head>
 <body>
   <div class="wrap">
     <h1>Pilotlu Gemi Sıra</h1>
-    <div class="time">Güncelleme: <span id="time">—</span> <span class="refresh">(her 60 sn)</span></div>
+    <div class="time">Güncelleme: <span id="time">—</span></div>
     <h2>Kuzeyden Pilotlu</h2>
     <ol id="kuzey"></ol>
     <h2>Güneyden Pilotlu</h2>
@@ -61,4 +61,3 @@
   </div>
 </body>
 </html>
-
