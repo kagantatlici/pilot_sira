@@ -1,0 +1,11 @@
+{
+  "name": "pilot_sira",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Kıyı Emniyeti planlı geçişlerde kılavuz alacak gemileri numaralı listeler.",
+  "scripts": {
+    "start": "echo 'Bu proje Vercel üzerinde çalışır. Yerelde test için vercel dev kullanın.'"
+  }
+}
+

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pilotlu Gemi Sıra</title>
+  <style>
+    body{font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px;}
+    h1{font-size: 20px; margin: 0 0 16px;}
+    h2{font-size: 18px; margin: 24px 0 8px;}
+    .time{color:#555; font-size: 12px}
+    ol{padding-left: 20px}
+    .empty{color:#777}
+    .wrap{max-width: 600px}
+    .refresh{font-size:12px; color:#777}
+  </style>
+  <script>
+    async function load() {
+      const elK = document.getElementById('kuzey');
+      const elG = document.getElementById('guney');
+      const elT = document.getElementById('time');
+      elK.innerHTML = '<li>Yükleniyor...</li>';
+      elG.innerHTML = '<li>Yükleniyor...</li>';
+      try {
+        const r = await fetch('/api/list');
+        const data = await r.json();
+        elT.textContent = new Date(data.lastUpdate || Date.now()).toLocaleString('tr-TR');
+        renderList(elK, data.kuzeyden);
+        renderList(elG, data.guneyden);
+      } catch (e) {
+        elK.innerHTML = '<li class="empty">Hata</li>';
+        elG.innerHTML = '<li class="empty">Hata</li>';
+      }
+    }
+    function renderList(ol, arr){
+      ol.innerHTML = '';
+      if(!arr || arr.length === 0){
+        ol.insertAdjacentHTML('beforeend', '<li class="empty">Veri yok</li>');
+        return;
+      }
+      arr.forEach((name)=>{
+        const li = document.createElement('li');
+        li.textContent = name;
+        ol.appendChild(li);
+      });
+    }
+    window.addEventListener('load', ()=>{
+      load();
+      setInterval(load, 60_000);
+    });
+  </script>
+  </head>
+<body>
+  <div class="wrap">
+    <h1>Pilotlu Gemi Sıra</h1>
+    <div class="time">Güncelleme: <span id="time">—</span> <span class="refresh">(her 60 sn)</span></div>
+    <h2>Kuzeyden Pilotlu</h2>
+    <ol id="kuzey"></ol>
+    <h2>Güneyden Pilotlu</h2>
+    <ol id="guney"></ol>
+  </div>
+</body>
+</html>
+
