@@ -19,8 +19,17 @@
     button.refresh{padding:6px 10px; font-size: 12px; border: 1px solid #ccc; background:#fff; border-radius:6px; cursor:pointer}
     button.refresh:hover{background:#f7f7f7}
     /* no auto-refresh */
-    .infos{margin-top:10px; color:#222; font-size:14px}
-    .infos p{margin:4px 0; font-weight:700}
+    .infos{
+      margin-top:10px;
+      margin-bottom:12px; /* alt başlıkla bir satır boşluk */
+      color:#0b5394; /* göz yormayan mavi ton */
+      font-size:14px; /* boyutu değiştirmiyoruz */
+      background:#f1f8ff; /* kutu arkaplanı */
+      border:1px solid #cfe8ff; /* kutu kenarlığı */
+      border-radius:8px;
+      padding:8px 12px;
+    }
+    .infos p{margin:4px 0; font-weight:400}
     @media (max-width: 680px){
       body{margin:16px}
       h1{font-size: 18px}
