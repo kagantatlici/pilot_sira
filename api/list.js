@@ -21,8 +21,13 @@ export default async function handler(req, res) {
       fetchPlanned("NS"), // Kuzey->Güney
       fetchPlanned("SN")  // Güney->Kuzey
     ]);
-    const kuzeyden = filterPilotlu(ns).map((s) => s.gemiAdi).filter(Boolean);
-    const guneyden = filterPilotlu(sn).map((s) => s.gemiAdi).filter(Boolean);
+    // Sadece kılavuz alan gemiler kalsın ve saat/boy bilgiyle dönelim
+    const kuzeyden = filterPilotlu(ns)
+      .map((s) => ({ gemiAdi: s.gemiAdi, boy: s.boy, planlama: s.planlama }))
+      .filter((s) => s.gemiAdi);
+    const guneyden = filterPilotlu(sn)
+      .map((s) => ({ gemiAdi: s.gemiAdi, boy: s.boy, planlama: s.planlama }))
+      .filter((s) => s.gemiAdi);
     res.setHeader("Content-Type", "application/json; charset=utf-8");
     res.status(200).json({ kuzeyden, guneyden, lastUpdate: new Date().toISOString() });
   } catch (e) {
@@ -106,4 +111,3 @@ function decodeHtmlEntities(text) {
   };
   return String(text || "").replace(/&#?\w+;/g, (m) => entities[m] || m);
 }
-

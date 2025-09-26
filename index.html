@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pilotlu Gemilerin Sırası</title>
+  <title>Sadece Pilot Alan Gemi Sıralaması</title>
   <style>
     body{font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px;}
     h1{font-size: 22px; margin: 0 0 12px; display:flex; align-items:center; gap:12px}
@@ -25,36 +25,48 @@
       const elK = document.getElementById('kuzeyBody');
       const elG = document.getElementById('guneyBody');
       const elT = document.getElementById('time');
-      elK.innerHTML = '<tr><td colspan="2">Yükleniyor...</td></tr>';
-      elG.innerHTML = '<tr><td colspan="2">Yükleniyor...</td></tr>';
+      elK.innerHTML = '<tr><td colspan="1">Yükleniyor...</td></tr>';
+      elG.innerHTML = '<tr><td colspan="1">Yükleniyor...</td></tr>';
       try {
-        const r = await fetch('list.json', { cache: 'no-store' });
-        const data = await r.json();
+        // Önce /api/list dene, olmazsa list.json'a düş
+        let data;
+        try {
+          const r1 = await fetch('/api/list', { cache: 'no-store' });
+          if (!r1.ok) throw new Error('api not ok');
+          data = await r1.json();
+        } catch (_) {
+          const r2 = await fetch('list.json', { cache: 'no-store' });
+          data = await r2.json();
+        }
         elT.textContent = new Date(data.lastUpdate || Date.now()).toLocaleString('tr-TR');
         renderTable(elK, data.kuzeyden);
         renderTable(elG, data.guneyden);
       } catch (e) {
-        elK.innerHTML = '<tr><td colspan="2" class="empty">Veri yok</td></tr>';
-        elG.innerHTML = '<tr><td colspan="2" class="empty">Veri yok</td></tr>';
+        elK.innerHTML = '<tr><td colspan="1" class="empty">Veri yok</td></tr>';
+        elG.innerHTML = '<tr><td colspan="1" class="empty">Veri yok</td></tr>';
       }
     }
     function renderTable(tbody, arr){
       tbody.innerHTML = '';
       if(!arr || arr.length === 0){
-        tbody.insertAdjacentHTML('beforeend', '<tr><td colspan="2" class="empty">Veri yok</td></tr>');
+        tbody.insertAdjacentHTML('beforeend', '<tr><td colspan="1" class="empty">Veri yok</td></tr>');
         return;
       }
-      arr.forEach((item)=>{
+      // Sadece pilotlu gemiler üstteki kaynakta filtrelenmiş olarak gelir; burada numaralandırırız
+      (arr || []).forEach((item, idx)=>{
         const tr = document.createElement('tr');
-        const name = typeof item === 'string' ? item : item.gemiAdi;
-        const boy = (typeof item === 'object' && item && item.boy) ? item.boy : null;
-        const td1 = document.createElement('td');
-        td1.textContent = name;
-        const td2 = document.createElement('td');
-        td2.className = 'num';
-        td2.textContent = boy ? Number(boy).toFixed(2) : '-';
-        tr.appendChild(td1);
-        tr.appendChild(td2);
+        const name = (item && typeof item === 'object') ? (item.gemiAdi || String(item)) : String(item);
+        const boy = (item && typeof item === 'object' && item.boy != null) ? Number(item.boy) : null;
+        const plan = (item && typeof item === 'object' && item.planlama) ? item.planlama : '—';
+        const td = document.createElement('td');
+        const parts = [
+          `${idx + 1}-`,
+          plan,
+          name,
+          (boy != null ? (Number.isFinite(boy) ? boy.toFixed(2) : String(boy)) : '-')
+        ];
+        td.textContent = parts.join(' - ');
+        tr.appendChild(td);
         tbody.appendChild(tr);
       });
     }
@@ -67,7 +79,7 @@
 <body>
   <div class="wrap">
     <h1>
-      Pilotlu Gemilerin Sırası
+      Sadece Pilot Alan Gemi Sıralaması
       <button class="refresh" onclick="load()">⟳ Yenile</button>
     </h1>
     <div class="time">Güncelleme: <span id="time">—</span></div>
@@ -77,7 +89,7 @@
         <h2>Kuzeyden Pilotlu Geçişe Hazır</h2>
         <table>
           <thead>
-            <tr><th>Gemi Adı</th><th class="num">Boy (m)</th></tr>
+            <tr><th>Sıra - Zaman - Gemi - Boy</th></tr>
           </thead>
           <tbody id="kuzeyBody"></tbody>
         </table>
@@ -86,7 +98,7 @@
         <h2>Güneyden Pilotlu Geçişe Hazır</h2>
         <table>
           <thead>
-            <tr><th>Gemi Adı</th><th class="num">Boy (m)</th></tr>
+            <tr><th>Sıra - Zaman - Gemi - Boy</th></tr>
           </thead>
           <tbody id="guneyBody"></tbody>
         </table>

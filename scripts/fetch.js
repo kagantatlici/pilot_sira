@@ -54,11 +54,11 @@ async function main() {
     const [ns, sn] = await Promise.all([fetchReady('NS'), fetchReady('SN')]);
     const kuzeyden = (ns || [])
       .filter((r) => r.kilavuz)
-      .map((r) => ({ gemiAdi: r.gemiAdi, boy: r.boy }))
+      .map((r) => ({ gemiAdi: r.gemiAdi, boy: r.boy, planlama: r.planlama }))
       .filter((r) => r.gemiAdi);
     const guneyden = (sn || [])
       .filter((r) => r.kilavuz)
-      .map((r) => ({ gemiAdi: r.gemiAdi, boy: r.boy }))
+      .map((r) => ({ gemiAdi: r.gemiAdi, boy: r.boy, planlama: r.planlama }))
       .filter((r) => r.gemiAdi);
     const out = { kuzeyden, guneyden, lastUpdate: new Date().toISOString() };
     await fs.writeFile(new URL('../list.json', import.meta.url), JSON.stringify(out, null, 2), 'utf8');
