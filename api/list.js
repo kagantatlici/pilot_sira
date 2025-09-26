@@ -21,6 +21,9 @@ export default async function handler(req, res) {
       fetchPlanned("NS"), // Kuzey->Güney
       fetchPlanned("SN")  // Güney->Kuzey
     ]);
+    // En sondaki plan saatlerini (pilot filtresi olmadan) çıkar
+    const lastNsPlan = (ns && ns.length ? ns[ns.length - 1]?.planlama : null) || null;
+    const lastSnPlan = (sn && sn.length ? sn[sn.length - 1]?.planlama : null) || null;
     // Sadece kılavuz alan gemiler kalsın ve saat/boy bilgiyle dönelim
     const kuzeyden = filterPilotlu(ns)
       .map((s) => ({ gemiAdi: s.gemiAdi, boy: s.boy, planlama: s.planlama }))
@@ -29,7 +32,13 @@ export default async function handler(req, res) {
       .map((s) => ({ gemiAdi: s.gemiAdi, boy: s.boy, planlama: s.planlama }))
       .filter((s) => s.gemiAdi);
     res.setHeader("Content-Type", "application/json; charset=utf-8");
-    res.status(200).json({ kuzeyden, guneyden, lastUpdate: new Date().toISOString() });
+    res.status(200).json({
+      kuzeyden,
+      guneyden,
+      olasiGuneyAcilisPlan: lastNsPlan,
+      olasiKuzeyAcilisPlan: lastSnPlan,
+      lastUpdate: new Date().toISOString()
+    });
   } catch (e) {
     res.status(500).json({ error: String(e?.message || e) });
   }

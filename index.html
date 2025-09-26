@@ -19,6 +19,8 @@
     button.refresh{padding:6px 10px; font-size: 12px; border: 1px solid #ccc; background:#fff; border-radius:6px; cursor:pointer}
     button.refresh:hover{background:#f7f7f7}
     /* no auto-refresh */
+    .infos{margin-top:16px; color:#555; font-size:13px}
+    .infos p{margin:4px 0}
     @media (max-width: 680px){
       body{margin:16px}
       h1{font-size: 18px}
@@ -41,6 +43,13 @@
         elT.textContent = new Date(data.lastUpdate || Date.now()).toLocaleString('tr-TR');
         renderTable(elK, data.kuzeyden);
         renderTable(elG, data.guneyden);
+        // Info lines (last planned + 2h)
+        const infoG = document.getElementById('infoGuney');
+        const infoK = document.getElementById('infoKuzey');
+        const gText = calcOpeningInfo(data.olasiGuneyAcilisPlan, 'Güney');
+        const kText = calcOpeningInfo(data.olasiKuzeyAcilisPlan, 'Kuzey');
+        infoG.textContent = gText || '';
+        infoK.textContent = kText || '';
       } catch (e) {
         elK.innerHTML = '<tr><td colspan="1" class="empty">Veri yok</td></tr>';
         elG.innerHTML = '<tr><td colspan="1" class="empty">Veri yok</td></tr>';
@@ -80,6 +89,30 @@
       const monthName = months[Math.max(1, mon) - 1] || '';
       return `${day} ${monthName} ${time}`;
     }
+    function calcOpeningInfo(planText, yon){
+      const t = formatPlanPlusHours(planText, 2);
+      if(!t) return '';
+      return `Olası ${yon} açılış ${t}`;
+    }
+    function formatPlanPlusHours(planText, addHours){
+      const s = String(planText || '').replace(/PLAN\.?\s*GEÇİŞ/i, '').trim();
+      const m = s.match(/(\d{1,2})\.(\d{1,2})\.(\d{2,4})\s+(\d{2}):(\d{2})/);
+      if(!m) return '';
+      const day = parseInt(m[1], 10);
+      const mon = parseInt(m[2], 10);
+      let year = parseInt(m[3], 10);
+      if(year < 100){ year += 2000; }
+      const hh = parseInt(m[4], 10);
+      const mm = parseInt(m[5], 10);
+      const d = new Date(year, Math.max(1, mon) - 1, day, hh, mm, 0, 0);
+      if(Number.isFinite(addHours)) d.setHours(d.getHours() + addHours);
+      const months = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+      const monthName = months[d.getMonth()];
+      const dd = d.getDate();
+      const h = `${d.getHours()}`.padStart(2,'0');
+      const m2 = `${d.getMinutes()}`.padStart(2,'0');
+      return `${dd} ${monthName} Saat ${h}:${m2}`;
+    }
     window.addEventListener('load', ()=>{
       // Yalnızca sayfa açıldığında bir kez veri çek
       load();
@@ -113,6 +146,10 @@
           <tbody id="guneyBody"></tbody>
         </table>
       </div>
+    </div>
+    <div class="infos">
+      <p id="infoGuney"></p>
+      <p id="infoKuzey"></p>
     </div>
   </div>
 </body>
