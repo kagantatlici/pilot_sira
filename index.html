@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sadece Pilot Alan Gemi Sıralaması</title>
+  <title>Pilotlu Gemilerin Sıralaması</title>
   <style>
     body{font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px;}
     h1{font-size: 22px; margin: 0 0 12px; display:flex; align-items:center; gap:12px}
@@ -89,26 +89,26 @@
 <body>
   <div class="wrap">
     <h1>
-      Sadece Pilot Alan Gemi Sıralaması
+      Pilotlu Gemilerin Sıralaması
       <button class="refresh" onclick="load()">⟳ Yenile</button>
     </h1>
     <div class="time">Güncelleme: <span id="time">—</span></div>
 
     <div class="grid">
       <div>
-        <h2>Kuzeyden Pilotlu Geçişe Hazır</h2>
+        <h2>Kuzeyden Pilotlu Planlı Geçiş</h2>
         <table>
           <thead>
-            <tr><th>Sıra - Zaman - Gemi - Boy</th></tr>
+            <tr><th>Sıra No - Zaman - Gemi Adı - Gemi Boyu.</th></tr>
           </thead>
           <tbody id="kuzeyBody"></tbody>
         </table>
       </div>
       <div>
-        <h2>Güneyden Pilotlu Geçişe Hazır</h2>
+        <h2>Güneyden Pilotlu Planlı Geçiş</h2>
         <table>
           <thead>
-            <tr><th>Sıra - Zaman - Gemi - Boy</th></tr>
+            <tr><th>Sıra No - Zaman - Gemi Adı - Gemi Boyu.</th></tr>
           </thead>
           <tbody id="guneyBody"></tbody>
         </table>
