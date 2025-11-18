@@ -15,7 +15,7 @@
     table{width:100%; border-collapse: collapse}
     thead th{background:#f2f2f2; text-align:left; padding:8px; font-size:14px}
     tbody td{padding:8px; border-top:1px solid #eee; font-size:14px; word-break: break-word;}
-    td.num{text-align:right; width:120px}
+    th.num, td.num{text-align:center; width:40px}
     button.refresh{padding:6px 10px; font-size: 12px; border: 1px solid #ccc; background:#fff; border-radius:6px; cursor:pointer}
     button.refresh:hover{background:#f7f7f7}
     button.togglePilot{padding:6px 10px; font-size: 12px; border: 1px solid #ccc; background:#fff; border-radius:6px; cursor:pointer}
@@ -77,6 +77,7 @@
     }
     function renderTable(tbody, arr){
       tbody.innerHTML = '';
+      const direction = (tbody && tbody.id === 'kuzeyBody') ? 'K' : 'G';
       if(!arr || arr.length === 0){
         tbody.insertAdjacentHTML('beforeend', '<tr><td colspan="6" class="empty">Veri yok</td></tr>');
         return;
@@ -103,6 +104,26 @@
           const input = document.createElement('input');
           input.type = 'text';
           input.placeholder = 'Pilot ismi';
+          const storageKey = `pilotName:${direction}:${name}:${plan}`;
+          try {
+            const saved = window.localStorage.getItem(storageKey);
+            if (saved) {
+              input.value = saved;
+            }
+          } catch (e) {
+            // localStorage kullanılamıyorsa sessizce devam et
+          }
+          input.addEventListener('input', () => {
+            try {
+              if (input.value) {
+                window.localStorage.setItem(storageKey, input.value);
+              } else {
+                window.localStorage.removeItem(storageKey);
+              }
+            } catch (e) {
+              // localStorage hatası olursa sessizce yoksay
+            }
+          });
           tdPilot.appendChild(input);
         }
         tr.appendChild(tdPilot);
