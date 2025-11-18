@@ -12,10 +12,13 @@
     .empty{color:#777}
     .wrap{max-width: 1000px}
     .grid{display:grid; grid-template-columns: 1fr 1fr; gap: 24px}
+    .table-scroll{width:100%; overflow-x:auto; -webkit-overflow-scrolling: touch;}
+    .table-scroll table{width:100%; min-width:720px; border-collapse: collapse}
     table{width:100%; border-collapse: collapse}
     thead th{background:#f2f2f2; text-align:left; padding:8px; font-size:14px}
     tbody td{padding:8px; border-top:1px solid #eee; font-size:14px; word-break: break-word;}
     th.num, td.num{text-align:center; width:40px}
+    th.ship-name, td.ship-name{white-space:nowrap; word-break:normal;}
     button.refresh{padding:6px 10px; font-size: 12px; border: 1px solid #ccc; background:#fff; border-radius:6px; cursor:pointer}
     button.refresh:hover{background:#f7f7f7}
     button.togglePilot{padding:6px 10px; font-size: 12px; border: 1px solid #ccc; background:#fff; border-radius:6px; cursor:pointer}
@@ -32,14 +35,16 @@
       padding:8px 12px;
     }
     .infos p{margin:4px 0; font-weight:400}
-    th.pilot-input, td.pilot-input{display:none; width:160px;}
+    th.pilot-input, td.pilot-input{display:none; width:auto; white-space:nowrap;}
     body.show-pilot-inputs th.pilot-input,
     body.show-pilot-inputs td.pilot-input{display:table-cell;}
     td.pilot-input input{
-      width:100%;
+      width:auto;
+      min-width:96px;
       box-sizing:border-box;
       padding:4px 6px;
       font-size:13px;
+      display:inline-block;
     }
     @media (max-width: 680px){
       body{margin:16px}
@@ -123,8 +128,10 @@
             } catch (e) {
               // localStorage hatası olursa sessizce yoksay
             }
+            autoSizePilotInput(input);
           });
           tdPilot.appendChild(input);
+          autoSizePilotInput(input);
         }
         tr.appendChild(tdPilot);
 
@@ -146,6 +153,7 @@
 
         // Gemi adı
         const tdName = document.createElement('td');
+        tdName.className = 'ship-name';
         tdName.textContent = name || '—';
         tr.appendChild(tdName);
 
@@ -161,6 +169,16 @@
 
         tbody.appendChild(tr);
       });
+    }
+    function autoSizePilotInput(input){
+      if(!input) return;
+      const minWidth = 96;
+      input.style.width = 'auto';
+      const newWidth = Math.max(minWidth, input.scrollWidth + 6);
+      input.style.width = `${newWidth}px`;
+    }
+    function resizeAllPilotInputs(){
+      document.querySelectorAll('.pilot-input input').forEach((input) => autoSizePilotInput(input));
     }
     function formatPlan(planText){
       const s = String(planText || '').replace(/PLAN\.?\s*GEÇİŞ/i, '').trim();
@@ -206,6 +224,9 @@
       if(btn){
         btn.textContent = visible ? 'Pilot ismi alanını gizle' : 'Pilot ismi alanını göster';
       }
+      if(visible){
+        resizeAllPilotInputs();
+      }
     }
     window.addEventListener('load', ()=>{
       // Yalnızca sayfa açıldığında bir kez veri çek
@@ -229,35 +250,39 @@
     <div class="grid">
       <div>
         <h2>Kuzeyden Pilotlu Planlı Geçiş</h2>
-        <table>
-          <thead>
-            <tr>
-              <th class="pilot-input">Pilot İsmi</th>
-              <th class="num">Sıra No</th>
-              <th>Zaman</th>
-              <th>Gemi Adı</th>
-              <th>Gemi Boyu</th>
-              <th>Gemi Tipi</th>
-            </tr>
-          </thead>
-          <tbody id="kuzeyBody"></tbody>
-        </table>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th class="pilot-input">Pilot İsmi</th>
+                <th class="num">Sıra No</th>
+                <th>Zaman</th>
+                <th class="ship-name">Gemi Adı</th>
+                <th>Gemi Boyu</th>
+                <th>Gemi Tipi</th>
+              </tr>
+            </thead>
+            <tbody id="kuzeyBody"></tbody>
+          </table>
+        </div>
       </div>
       <div>
         <h2>Güneyden Pilotlu Planlı Geçiş</h2>
-        <table>
-          <thead>
-            <tr>
-              <th class="pilot-input">Pilot İsmi</th>
-              <th class="num">Sıra No</th>
-              <th>Zaman</th>
-              <th>Gemi Adı</th>
-              <th>Gemi Boyu</th>
-              <th>Gemi Tipi</th>
-            </tr>
-          </thead>
-          <tbody id="guneyBody"></tbody>
-        </table>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th class="pilot-input">Pilot İsmi</th>
+                <th class="num">Sıra No</th>
+                <th>Zaman</th>
+                <th class="ship-name">Gemi Adı</th>
+                <th>Gemi Boyu</th>
+                <th>Gemi Tipi</th>
+              </tr>
+            </thead>
+            <tbody id="guneyBody"></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
