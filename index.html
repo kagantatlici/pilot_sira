@@ -13,12 +13,13 @@
     .wrap{max-width: 1000px}
     .grid{display:grid; grid-template-columns: 1fr 1fr; gap: 24px}
     .table-scroll{width:100%; overflow-x:auto; -webkit-overflow-scrolling: touch;}
-    .table-scroll table{width:100%; min-width:720px; border-collapse: collapse}
-    table{width:100%; border-collapse: collapse}
-    thead th{background:#f2f2f2; text-align:left; padding:8px; font-size:14px}
-    tbody td{padding:8px; border-top:1px solid #eee; font-size:14px; word-break: break-word;}
-    th.num, td.num{text-align:center; width:40px}
+    .table-scroll table{width:auto; min-width:100%; border-collapse: collapse; table-layout:auto;}
+    table{width:auto; min-width:100%; border-collapse: collapse}
+    thead th{background:#f2f2f2; text-align:left; padding:6px 8px; font-size:14px}
+    tbody td{padding:6px 8px; border-top:1px solid #eee; font-size:14px; word-break: break-word;}
+    th.num, td.num{text-align:center; width:34px}
     th.ship-name, td.ship-name{white-space:nowrap; word-break:normal;}
+    .day-hint{font-size:12px; color:#666; margin-left:4px; font-weight:400;}
     button.refresh{padding:6px 10px; font-size: 12px; border: 1px solid #ccc; background:#fff; border-radius:6px; cursor:pointer}
     button.refresh:hover{background:#f7f7f7}
     button.togglePilot{padding:6px 10px; font-size: 12px; border: 1px solid #ccc; background:#fff; border-radius:6px; cursor:pointer}
@@ -55,6 +56,7 @@
     }
   </style>
   <script>
+    const MONTH_NAMES = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
     async function load() {
       const elK = document.getElementById('kuzeyBody');
       const elG = document.getElementById('guneyBody');
@@ -81,8 +83,11 @@
       }
     }
     function renderTable(tbody, arr){
+      if(!tbody) return;
       tbody.innerHTML = '';
       const direction = (tbody && tbody.id === 'kuzeyBody') ? 'K' : 'G';
+      const dayLabel = findFirstPlanDay(arr);
+      updateDayHintFromBody(tbody, dayLabel);
       if(!arr || arr.length === 0){
         tbody.insertAdjacentHTML('beforeend', '<tr><td colspan="6" class="empty">Veri yok</td></tr>');
         return;
@@ -170,6 +175,24 @@
         tbody.appendChild(tr);
       });
     }
+    function updateDayHintFromBody(tbody, dayLabel){
+      if(!tbody) return;
+      const targetId = tbody.getAttribute('data-day-label');
+      if(!targetId) return;
+      const el = document.getElementById(targetId);
+      if(el){
+        el.textContent = dayLabel ? `(${dayLabel})` : '';
+      }
+    }
+    function findFirstPlanDay(arr){
+      for (const item of (arr || [])){
+        const isObj = (item && typeof item === 'object');
+        const planRaw = isObj ? (item.planlama || '') : '';
+        const label = formatPlanDayLabel(planRaw);
+        if(label) return label;
+      }
+      return '';
+    }
     function autoSizePilotInput(input){
       if(!input) return;
       const minWidth = 96;
@@ -181,18 +204,37 @@
       document.querySelectorAll('.pilot-input input').forEach((input) => autoSizePilotInput(input));
     }
     function formatPlan(planText){
-      const s = String(planText || '').replace(/PLAN\.?\s*GEÇİŞ/i, '').trim();
-      const m = s.match(/(\d{1,2})\.(\d{1,2})\.(\d{2,4})\s+(\d{2}:\d{2})/);
-      if(!m){
-        // fallback: just return original text without leading hyphens
-        return s.replace(/^[-\s]+/, '') || '—';
+      const parts = parsePlanParts(planText);
+      if(!parts){
+        const clean = cleanPlanText(planText);
+        return clean.replace(/^[-\s]+/, '') || '—';
       }
-      const day = parseInt(m[1], 10);
-      const mon = parseInt(m[2], 10);
-      const time = m[4];
-      const months = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
-      const monthName = months[Math.max(1, mon) - 1] || '';
-      return `${day} ${monthName} ${time}`;
+      return `${parts.hour}:${parts.minute}`;
+    }
+    function cleanPlanText(planText){
+      return String(planText || '').replace(/PLAN\.?\s*GEÇİŞ/i, '').trim();
+    }
+    function parsePlanParts(planText){
+      const s = cleanPlanText(planText);
+      const m = s.match(/(\d{1,2})\.(\d{1,2})\.(\d{2,4})\s+(\d{2}):(\d{2})/);
+      if(!m) return null;
+      let year = parseInt(m[3], 10);
+      if(year < 100){ year += 2000; }
+      const monthIndex = Math.max(1, parseInt(m[2], 10)) - 1;
+      return {
+        text: s,
+        day: parseInt(m[1], 10),
+        monthIndex,
+        monthName: MONTH_NAMES[monthIndex] || '',
+        year,
+        hour: m[4],
+        minute: m[5]
+      };
+    }
+    function formatPlanDayLabel(planText){
+      const parts = parsePlanParts(planText);
+      if(!parts || !parts.monthName) return '';
+      return `${parts.day} ${parts.monthName}`;
     }
     function calcOpeningInfo(planText, yon){
       const t = formatPlanPlusHours(planText, 2);
@@ -200,19 +242,11 @@
       return `Olası ${yon} açılış ${t}`;
     }
     function formatPlanPlusHours(planText, addHours){
-      const s = String(planText || '').replace(/PLAN\.?\s*GEÇİŞ/i, '').trim();
-      const m = s.match(/(\d{1,2})\.(\d{1,2})\.(\d{2,4})\s+(\d{2}):(\d{2})/);
-      if(!m) return '';
-      const day = parseInt(m[1], 10);
-      const mon = parseInt(m[2], 10);
-      let year = parseInt(m[3], 10);
-      if(year < 100){ year += 2000; }
-      const hh = parseInt(m[4], 10);
-      const mm = parseInt(m[5], 10);
-      const d = new Date(year, Math.max(1, mon) - 1, day, hh, mm, 0, 0);
+      const parts = parsePlanParts(planText);
+      if(!parts) return '';
+      const d = new Date(parts.year, parts.monthIndex, parts.day, parseInt(parts.hour, 10), parseInt(parts.minute, 10), 0, 0);
       if(Number.isFinite(addHours)) d.setHours(d.getHours() + addHours);
-      const months = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
-      const monthName = months[d.getMonth()];
+      const monthName = MONTH_NAMES[d.getMonth()];
       const dd = d.getDate();
       const h = `${d.getHours()}`.padStart(2,'0');
       const m2 = `${d.getMinutes()}`.padStart(2,'0');
@@ -256,13 +290,13 @@
               <tr>
                 <th class="pilot-input">Pilot İsmi</th>
                 <th class="num">Sıra No</th>
-                <th>Zaman</th>
+                <th>Zaman <span class="day-hint" id="dayLabelKuzey"></span></th>
                 <th class="ship-name">Gemi Adı</th>
                 <th>Gemi Boyu</th>
                 <th>Gemi Tipi</th>
               </tr>
             </thead>
-            <tbody id="kuzeyBody"></tbody>
+            <tbody id="kuzeyBody" data-day-label="dayLabelKuzey"></tbody>
           </table>
         </div>
       </div>
@@ -274,13 +308,13 @@
               <tr>
                 <th class="pilot-input">Pilot İsmi</th>
                 <th class="num">Sıra No</th>
-                <th>Zaman</th>
+                <th>Zaman <span class="day-hint" id="dayLabelGuney"></span></th>
                 <th class="ship-name">Gemi Adı</th>
                 <th>Gemi Boyu</th>
                 <th>Gemi Tipi</th>
               </tr>
             </thead>
-            <tbody id="guneyBody"></tbody>
+            <tbody id="guneyBody" data-day-label="dayLabelGuney"></tbody>
           </table>
         </div>
       </div>
