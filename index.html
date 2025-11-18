@@ -18,6 +18,8 @@
     td.num{text-align:right; width:120px}
     button.refresh{padding:6px 10px; font-size: 12px; border: 1px solid #ccc; background:#fff; border-radius:6px; cursor:pointer}
     button.refresh:hover{background:#f7f7f7}
+    button.togglePilot{padding:6px 10px; font-size: 12px; border: 1px solid #ccc; background:#fff; border-radius:6px; cursor:pointer}
+    button.togglePilot:hover{background:#f7f7f7}
     /* no auto-refresh */
     .infos{
       margin-top:10px;
@@ -30,6 +32,15 @@
       padding:8px 12px;
     }
     .infos p{margin:4px 0; font-weight:400}
+    th.pilot-input, td.pilot-input{display:none; width:160px;}
+    body.show-pilot-inputs th.pilot-input,
+    body.show-pilot-inputs td.pilot-input{display:table-cell;}
+    td.pilot-input input{
+      width:100%;
+      box-sizing:border-box;
+      padding:4px 6px;
+      font-size:13px;
+    }
     @media (max-width: 680px){
       body{margin:16px}
       h1{font-size: 18px}
@@ -43,8 +54,8 @@
       const elK = document.getElementById('kuzeyBody');
       const elG = document.getElementById('guneyBody');
       const elT = document.getElementById('time');
-      elK.innerHTML = '<tr><td colspan="1">Yükleniyor...</td></tr>';
-      elG.innerHTML = '<tr><td colspan="1">Yükleniyor...</td></tr>';
+      elK.innerHTML = '<tr><td colspan="6">Yükleniyor...</td></tr>';
+      elG.innerHTML = '<tr><td colspan="6">Yükleniyor...</td></tr>';
       try {
         const r = await fetch('/api/list', { cache: 'no-store' });
         if (!r.ok) throw new Error('API error');
@@ -67,20 +78,66 @@
     function renderTable(tbody, arr){
       tbody.innerHTML = '';
       if(!arr || arr.length === 0){
-        tbody.insertAdjacentHTML('beforeend', '<tr><td colspan="1" class="empty">Veri yok</td></tr>');
+        tbody.insertAdjacentHTML('beforeend', '<tr><td colspan="6" class="empty">Veri yok</td></tr>');
         return;
       }
-      // Sadece pilotlu gemiler üstteki kaynakta filtrelenmiş olarak gelir; burada numaralandırırız
-      (arr || []).forEach((item, idx)=>{
+      let pilotCounter = 0;
+      (arr || []).forEach((item)=>{
         const tr = document.createElement('tr');
-        const name = (item && typeof item === 'object') ? (item.gemiAdi || String(item)) : String(item);
-        const boy = (item && typeof item === 'object' && item.boy != null) ? Number(item.boy) : null;
-        const planRaw = (item && typeof item === 'object' && item.planlama) ? item.planlama : '';
+        const isObj = (item && typeof item === 'object');
+        const name = isObj ? (item.gemiAdi || '') : String(item);
+        const boyVal = isObj ? item.boy : null;
+        const planRaw = isObj ? (item.planlama || '') : '';
+        const type = isObj ? (item.gemiTipi || '') : '';
+        const isPilotlu = !!(isObj && item.kilavuz);
         const plan = formatPlan(planRaw);
-        const td = document.createElement('td');
-        const boyTxt = (boy != null ? (Number.isFinite(boy) ? `${boy.toFixed(2)} m` : `${String(boy)} m`) : '-')
-        td.textContent = `${idx + 1}- ${plan} - ${name} - ${boyTxt}`;
-        tr.appendChild(td);
+        const boyNum = (boyVal != null ? Number(boyVal) : null);
+        const boyTxt = (boyNum != null
+          ? (Number.isFinite(boyNum) ? `${boyNum.toFixed(2)} m` : `${String(boyVal)} m`)
+          : '-');
+
+        // Pilot ismi alanı (sadece pilotlu gemilerde input göster)
+        const tdPilot = document.createElement('td');
+        tdPilot.className = 'pilot-input';
+        if (isPilotlu) {
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.placeholder = 'Pilot ismi';
+          tdPilot.appendChild(input);
+        }
+        tr.appendChild(tdPilot);
+
+        // Sıra numarası (sadece pilotlu gemiler için artan numara)
+        const tdNum = document.createElement('td');
+        tdNum.className = 'num';
+        if (isPilotlu) {
+          pilotCounter += 1;
+          tdNum.textContent = pilotCounter;
+        } else {
+          tdNum.textContent = '';
+        }
+        tr.appendChild(tdNum);
+
+        // Zaman
+        const tdPlan = document.createElement('td');
+        tdPlan.textContent = plan;
+        tr.appendChild(tdPlan);
+
+        // Gemi adı
+        const tdName = document.createElement('td');
+        tdName.textContent = name || '—';
+        tr.appendChild(tdName);
+
+        // Gemi boyu
+        const tdBoy = document.createElement('td');
+        tdBoy.textContent = boyTxt;
+        tr.appendChild(tdBoy);
+
+        // Gemi tipi
+        const tdType = document.createElement('td');
+        tdType.textContent = type || '—';
+        tr.appendChild(tdType);
+
         tbody.appendChild(tr);
       });
     }
@@ -122,6 +179,13 @@
       const m2 = `${d.getMinutes()}`.padStart(2,'0');
       return `${dd} ${monthName} Saat ${h}:${m2}`;
     }
+    function togglePilotInputs(){
+      const btn = document.getElementById('togglePilotInputs');
+      const visible = document.body.classList.toggle('show-pilot-inputs');
+      if(btn){
+        btn.textContent = visible ? 'Pilot ismi alanını gizle' : 'Pilot ismi alanını göster';
+      }
+    }
     window.addEventListener('load', ()=>{
       // Yalnızca sayfa açıldığında bir kez veri çek
       load();
@@ -133,6 +197,7 @@
     <h1>
       Pilotlu Gemilerin Sıralaması
       <button class="refresh" onclick="load()">⟳ Yenile</button>
+      <button class="togglePilot" id="togglePilotInputs" onclick="togglePilotInputs()">Pilot ismi alanını göster</button>
     </h1>
     <div class="time">Güncelleme: <span id="time">—</span></div>
     <div class="infos">
@@ -145,7 +210,14 @@
         <h2>Kuzeyden Pilotlu Planlı Geçiş</h2>
         <table>
           <thead>
-            <tr><th>Sıra No - Zaman - Gemi Adı - Gemi Boyu.</th></tr>
+            <tr>
+              <th class="pilot-input">Pilot İsmi</th>
+              <th class="num">Sıra No</th>
+              <th>Zaman</th>
+              <th>Gemi Adı</th>
+              <th>Gemi Boyu</th>
+              <th>Gemi Tipi</th>
+            </tr>
           </thead>
           <tbody id="kuzeyBody"></tbody>
         </table>
@@ -154,7 +226,14 @@
         <h2>Güneyden Pilotlu Planlı Geçiş</h2>
         <table>
           <thead>
-            <tr><th>Sıra No - Zaman - Gemi Adı - Gemi Boyu.</th></tr>
+            <tr>
+              <th class="pilot-input">Pilot İsmi</th>
+              <th class="num">Sıra No</th>
+              <th>Zaman</th>
+              <th>Gemi Adı</th>
+              <th>Gemi Boyu</th>
+              <th>Gemi Tipi</th>
+            </tr>
           </thead>
           <tbody id="guneyBody"></tbody>
         </table>

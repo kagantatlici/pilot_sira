@@ -24,12 +24,24 @@ export default async function handler(req, res) {
     // En sondaki plan saatlerini (pilot filtresi olmadan) çıkar
     const lastNsPlan = (ns && ns.length ? ns[ns.length - 1]?.planlama : null) || null;
     const lastSnPlan = (sn && sn.length ? sn[sn.length - 1]?.planlama : null) || null;
-    // Sadece kılavuz alan gemiler kalsın ve saat/boy bilgiyle dönelim
-    const kuzeyden = filterPilotlu(ns)
-      .map((s) => ({ gemiAdi: s.gemiAdi, boy: s.boy, planlama: s.planlama }))
+    // Planlı geçişteki tüm gemileri döndür, ancak kimin kılavuz aldığı bilgisini de ilet
+    const kuzeyden = (ns || [])
+      .map((s) => ({
+        gemiAdi: s.gemiAdi,
+        boy: s.boy,
+        planlama: s.planlama,
+        gemiTipi: s.gemiTipi,
+        kilavuz: !!s.kilavuz
+      }))
       .filter((s) => s.gemiAdi);
-    const guneyden = filterPilotlu(sn)
-      .map((s) => ({ gemiAdi: s.gemiAdi, boy: s.boy, planlama: s.planlama }))
+    const guneyden = (sn || [])
+      .map((s) => ({
+        gemiAdi: s.gemiAdi,
+        boy: s.boy,
+        planlama: s.planlama,
+        gemiTipi: s.gemiTipi,
+        kilavuz: !!s.kilavuz
+      }))
       .filter((s) => s.gemiAdi);
     res.setHeader("Content-Type", "application/json; charset=utf-8");
     res.status(200).json({
